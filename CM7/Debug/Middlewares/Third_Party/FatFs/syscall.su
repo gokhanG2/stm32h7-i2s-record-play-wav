@@ -1,0 +1,2 @@
+D:/TouchGFXProjects/stm32h7disco-i2s-baremetal/Middlewares/Third_Party/FatFs/src/option/syscall.c:158:7:ff_memalloc	16	static
+D:/TouchGFXProjects/stm32h7disco-i2s-baremetal/Middlewares/Third_Party/FatFs/src/option/syscall.c:170:6:ff_memfree	16	static
