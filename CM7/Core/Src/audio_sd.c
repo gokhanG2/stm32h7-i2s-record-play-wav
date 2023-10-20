@@ -44,9 +44,8 @@ void sd_card_init()
 
 void start_recording(uint32_t frequency)
 {
-	static char file_name[] = "w_000.wav";
-	static uint8_t file_counter = 10;
-	int file_number_digits = file_counter;
+	static char file_name[] = "samp.wav";
+
 	uint32_t byte_rate = frequency * 2 * 2;
 	wav_file_header[24] = (uint8_t)frequency;
 	wav_file_header[25] = (uint8_t)(frequency >> 8);
@@ -56,15 +55,6 @@ void start_recording(uint32_t frequency)
 	wav_file_header[29] = (uint8_t)(byte_rate >> 8);
 	wav_file_header[30] = (uint8_t)(byte_rate >> 16);
 	wav_file_header[31] = (uint8_t)(byte_rate >> 24);
-
-	// defining a wave file name
-	file_name[4] = file_number_digits%10 + 48;
-	file_number_digits /= 10;
-	file_name[3] = file_number_digits%10 + 48;
-	file_number_digits /= 10;
-	file_name[2] = file_number_digits%10 + 48;
-//	printf("file name %s \n", file_name);
-	file_counter++;
 
 	// creating a file
 	sd_result = f_open(&wavFile ,file_name, FA_WRITE|FA_CREATE_ALWAYS);
@@ -133,11 +123,11 @@ void stop_recording()
 //	printf("closed the file \n");
 }
 
-void play_record(uint8_t *data, uint16_t data_size){
+bool play_record(uint8_t *data, uint16_t data_size){
 	FRESULT fr = FR_NOT_READY;
 	UINT bytesRead = 0;
 
-	char folderPath[] = "0:sample.wav";
+	char folderPath[] = "0:samp.wav";
 	if(first_play == 0){
 		fr = f_open(&wavFile, folderPath, FA_READ);
 
@@ -149,5 +139,12 @@ void play_record(uint8_t *data, uint16_t data_size){
 	}
 
 	f_read(&wavFile, data, data_size, &bytesRead);
+	if(bytesRead < data_size){
+		f_close(&wavFile);
+		first_play = 0;
+		return false;
+	}
+
+	return true;
 }
 

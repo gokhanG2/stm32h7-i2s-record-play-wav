@@ -74,7 +74,7 @@ static void MX_SDMMC1_SD_Init(void);
 static void MX_USART1_UART_Init(void);
 static void MX_I2S1_Init(void);
 /* USER CODE BEGIN PFP */
-
+static void I2S1_ReInit(uint32_t Mode);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -190,6 +190,7 @@ Error_Handler();
 	  if(recordBtnPressed){
 		  recordStartStop ^= 0x01;
 		  if(recordStartStop){
+			  I2S1_ReInit(I2S_MODE_MASTER_RX);
 			  start_recording(I2S_AUDIOFREQ_32K);
 			  HAL_I2S_Receive_DMA(&hi2s1, (uint8_t *)data_i2s, sizeof(data_i2s)/2);
 		  }
@@ -201,6 +202,7 @@ Error_Handler();
 
 	  if(playBtnPressed){
 		  playStartStop = 1;
+		  I2S1_ReInit(I2S_MODE_MASTER_TX);
 	  }
 
 	  if(recordStartStop == 1 && half_i2s == 1){
@@ -213,7 +215,8 @@ Error_Handler();
 	  }
 
 	  if(playStartStop){
-		  play_record(((uint8_t*)data_i2s), WAV_WRITE_SAMPLE_COUNT*2);
+		  if(!play_record(((uint8_t*)data_i2s), WAV_WRITE_SAMPLE_COUNT*2))
+			  playStartStop = 0;
 		  for(int i=0; i<WAV_WRITE_SAMPLE_COUNT/2; i++)
 			  data_i2s[2*i+1] = data_i2s[2*i];
 		  HAL_I2S_Transmit(&hi2s1, data_i2s, WAV_WRITE_SAMPLE_COUNT, 1000);
@@ -466,6 +469,37 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+
+static void I2S1_ReInit(uint32_t Mode)
+{
+
+  /* USER CODE BEGIN I2S1_Init 0 */
+
+  /* USER CODE END I2S1_Init 0 */
+
+  /* USER CODE BEGIN I2S1_Init 1 */
+
+  /* USER CODE END I2S1_Init 1 */
+  hi2s1.Instance = SPI1;
+  hi2s1.Init.Mode = Mode;
+  hi2s1.Init.Standard = I2S_STANDARD_PHILIPS;
+  hi2s1.Init.DataFormat = I2S_DATAFORMAT_16B_EXTENDED;
+  hi2s1.Init.MCLKOutput = I2S_MCLKOUTPUT_DISABLE;
+  hi2s1.Init.AudioFreq = I2S_AUDIOFREQ_32K;
+  hi2s1.Init.CPOL = I2S_CPOL_LOW;
+  hi2s1.Init.FirstBit = I2S_FIRSTBIT_MSB;
+  hi2s1.Init.WSInversion = I2S_WS_INVERSION_DISABLE;
+  hi2s1.Init.Data24BitAlignment = I2S_DATA_24BIT_ALIGNMENT_RIGHT;
+  hi2s1.Init.MasterKeepIOState = I2S_MASTER_KEEP_IO_STATE_DISABLE;
+  if (HAL_I2S_Init(&hi2s1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN I2S1_Init 2 */
+
+  /* USER CODE END I2S1_Init 2 */
+
+}
 
 void HAL_I2S_RxCpltCallback(I2S_HandleTypeDef *hi2s)
 //void HAL_I2SEx_TxRxCpltCallback(I2S_HandleTypeDef *hi2s)
