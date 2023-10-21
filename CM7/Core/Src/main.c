@@ -56,10 +56,8 @@ UART_HandleTypeDef huart1;
 
 /* USER CODE BEGIN PV */
 uint8_t recordBtnPressed = 0, recordBtnPrevState = 0;
-uint16_t recordBtnState = 0;
-
 uint8_t playBtnPressed = 0, playBtnPrevState = 0;
-uint16_t playBtnState = 0;
+uint32_t buttonCheckTick = 0;
 
 int16_t data_i2s[WAV_WRITE_SAMPLE_COUNT];
 volatile uint8_t  half_i2s, full_i2s;
@@ -152,8 +150,8 @@ Error_Handler();
   sd_card_init();
   HAL_Delay(500);
 
-//  HAL_I2SEx_TransmitReceive_DMA(&hi2s1, NULL, (uint8_t *)data_i2s, sizeof(data_i2s)/2);
-//  HAL_I2S_Receive_IT(&hi2s1, (uint8_t *)data_i2s, sizeof(data_i2s)/2);
+  buttonCheckTick = HAL_GetTick();
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -163,30 +161,22 @@ Error_Handler();
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+	  // CHECK RECORD AND PLAY BUTTONS STATES
+	  if(HAL_GetTick() - buttonCheckTick > 5){
+		  buttonCheckTick = HAL_GetTick();
 
-	  // RECORD BUTTON STATE
-	  if(HAL_GPIO_ReadPin(JOY_DOWN_GPIO_Port, JOY_DOWN_Pin) == 0){
-		  recordBtnState++;
-		  if(recordBtnState > 100)
-			  recordBtnState = 100;
-	  }
-	  if(recordBtnState == 100 && recordBtnPrevState != HAL_GPIO_ReadPin(JOY_DOWN_GPIO_Port, JOY_DOWN_Pin)){
-		  recordBtnState = 0;
-		  recordBtnPressed = 1;
-	  }
-	  recordBtnPrevState = HAL_GPIO_ReadPin(JOY_DOWN_GPIO_Port, JOY_DOWN_Pin);
+		  // RECORD BUTTON STATE
+		  if(HAL_GPIO_ReadPin(JOY_DOWN_GPIO_Port, JOY_DOWN_Pin) == 0 && recordBtnPrevState != HAL_GPIO_ReadPin(JOY_DOWN_GPIO_Port, JOY_DOWN_Pin))
+			  recordBtnPressed = 1;
 
-	  // PLAY BUTTON STATE
-	  if(HAL_GPIO_ReadPin(JOY_UP_GPIO_Port, JOY_UP_Pin) == 0){
-		  playBtnState++;
-		  if(playBtnState > 100)
-			  playBtnState = 100;
+		  recordBtnPrevState = HAL_GPIO_ReadPin(JOY_DOWN_GPIO_Port, JOY_DOWN_Pin);
+
+		  // PLAY BUTTON STATE
+		  if(HAL_GPIO_ReadPin(JOY_UP_GPIO_Port, JOY_UP_Pin) == 0 && playBtnPrevState != HAL_GPIO_ReadPin(JOY_UP_GPIO_Port, JOY_UP_Pin))
+			  playBtnPressed = 1;
+
+		  playBtnPrevState = HAL_GPIO_ReadPin(JOY_UP_GPIO_Port, JOY_UP_Pin);
 	  }
-	  if(playBtnState == 100 && playBtnPrevState != HAL_GPIO_ReadPin(JOY_UP_GPIO_Port, JOY_UP_Pin)){
-		  playBtnState = 0;
-		  playBtnPressed = 1;
-	  }
-	  playBtnPrevState = HAL_GPIO_ReadPin(JOY_UP_GPIO_Port, JOY_UP_Pin);
 
 	  // RECORD WAV FILE ROUTINE BY USING I2S_RX AND SD CARD
 	  if(recordBtnPressed == 1 && playWAV_File == 0){
@@ -226,34 +216,34 @@ Error_Handler();
 		  playWAV_File = 1;
 		  HAL_GPIO_WritePin(GPIOI, GPIO_PIN_13, GPIO_PIN_RESET);
 		  I2S1_ReInit(I2S_MODE_MASTER_TX);
-		  if(!play_record(((uint8_t*)data_i2s), WAV_WRITE_SAMPLE_COUNT*2)){
+		  if(!play_record(((uint8_t*)data_i2s), WAV_WRITE_SAMPLE_COUNT/4)){
 			  endOfWavFile = 1;
 		  }
-		  for(int i=0; i<WAV_WRITE_SAMPLE_COUNT/2; i++)
+		  for(int i=0; i<WAV_WRITE_SAMPLE_COUNT/16; i++)
 			  data_i2s[2*i+1] = data_i2s[2*i];
-		  HAL_I2S_Transmit_DMA(&hi2s1, (uint16_t*)data_i2s, WAV_WRITE_SAMPLE_COUNT);
+		  HAL_I2S_Transmit_DMA(&hi2s1, (uint16_t*)data_i2s, WAV_WRITE_SAMPLE_COUNT/8);
 	  }
 
 	  if(playWAV_File == 1 && half_i2s_tx == 1){
-		  if(!play_record(((uint8_t*)data_i2s), WAV_WRITE_SAMPLE_COUNT)){
+		  if(!play_record(((uint8_t*)data_i2s), WAV_WRITE_SAMPLE_COUNT/8)){
 			  endOfWavFile = 1;
 		  }
-		  for(int i=0; i<WAV_WRITE_SAMPLE_COUNT/4; i++)
+		  for(int i=0; i<WAV_WRITE_SAMPLE_COUNT/32; i++)
 			  data_i2s[2*i+1] = data_i2s[2*i];
 		  half_i2s_tx = 0;
 	  }
 	  if(playWAV_File == 1 && full_i2s_tx == 1){
-		  if(!play_record(((uint8_t*)data_i2s) + WAV_WRITE_SAMPLE_COUNT, WAV_WRITE_SAMPLE_COUNT)){
+		  if(!play_record(((uint8_t*)data_i2s) + WAV_WRITE_SAMPLE_COUNT/8, WAV_WRITE_SAMPLE_COUNT/8)){
 			  endOfWavFile = 1;
 		  }
-		  for(int i = WAV_WRITE_SAMPLE_COUNT/4; i<WAV_WRITE_SAMPLE_COUNT/2; i++)
+		  for(int i = WAV_WRITE_SAMPLE_COUNT/32; i<WAV_WRITE_SAMPLE_COUNT/16; i++)
 			  data_i2s[2*i+1] = data_i2s[2*i];
 	  }
 
 	  if(playWAV_File == 1 && full_i2s_tx == 1){
 		  full_i2s_tx = 0;
 //		  HAL_I2S_Transmit(&hi2s1, data_i2s, WAV_WRITE_SAMPLE_COUNT, 1000);
-		  HAL_I2S_Transmit_DMA(&hi2s1, (uint16_t*)data_i2s, WAV_WRITE_SAMPLE_COUNT);
+//		  HAL_I2S_Transmit_DMA(&hi2s1, (uint16_t*)data_i2s, WAV_WRITE_SAMPLE_COUNT);
 		  if(endOfWavFile){
 			  playWAV_File = 0;
 		  }
