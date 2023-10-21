@@ -189,12 +189,12 @@ Error_Handler();
 	  playBtnPrevState = HAL_GPIO_ReadPin(JOY_UP_GPIO_Port, JOY_UP_Pin);
 
 	  // RECORD WAV FILE ROUTINE BY USING I2S_RX AND SD CARD
-	  if(recordBtnPressed){
+	  if(recordBtnPressed == 1 && playWAV_File == 0){
 		  recordWAV_File ^= 0x01;
 		  if(recordWAV_File){
 			  HAL_GPIO_WritePin(GPIOI, GPIO_PIN_12, GPIO_PIN_RESET);
 			  I2S1_ReInit(I2S_MODE_MASTER_RX);
-			  start_recording(I2S_AUDIOFREQ_32K);
+			  start_recording(I2S_AUDIOFREQ_11K);
 			  HAL_I2S_Receive_DMA(&hi2s1, (uint8_t *)data_i2s, sizeof(data_i2s)/2);
 		  }
 		  else{
@@ -217,11 +217,12 @@ Error_Handler();
 	  if(endOfWavFile == 1 && full_i2s_tx == 1){
 		  endOfWavFile = 0;
 		  full_i2s_tx = 0;
+		  playWAV_File = 0;
 		  HAL_I2S_DMAStop(&hi2s1);
 		  HAL_GPIO_WritePin(GPIOI, GPIO_PIN_13, GPIO_PIN_SET);
 	  }
 
-	  if(playBtnPressed){
+	  if(playBtnPressed == 1 &&  recordWAV_File == 0){
 		  playWAV_File = 1;
 		  HAL_GPIO_WritePin(GPIOI, GPIO_PIN_13, GPIO_PIN_RESET);
 		  I2S1_ReInit(I2S_MODE_MASTER_TX);
@@ -343,11 +344,11 @@ static void MX_I2S1_Init(void)
 
   /* USER CODE END I2S1_Init 1 */
   hi2s1.Instance = SPI1;
-  hi2s1.Init.Mode = I2S_MODE_MASTER_FULLDUPLEX;
+  hi2s1.Init.Mode = I2S_MODE_MASTER_RX;
   hi2s1.Init.Standard = I2S_STANDARD_PHILIPS;
   hi2s1.Init.DataFormat = I2S_DATAFORMAT_16B_EXTENDED;
   hi2s1.Init.MCLKOutput = I2S_MCLKOUTPUT_DISABLE;
-  hi2s1.Init.AudioFreq = I2S_AUDIOFREQ_32K;
+  hi2s1.Init.AudioFreq = I2S_AUDIOFREQ_11K;
   hi2s1.Init.CPOL = I2S_CPOL_LOW;
   hi2s1.Init.FirstBit = I2S_FIRSTBIT_MSB;
   hi2s1.Init.WSInversion = I2S_WS_INVERSION_DISABLE;
@@ -450,13 +451,13 @@ static void MX_DMA_Init(void)
 
   /* DMA controller clock enable */
   __HAL_RCC_DMA1_CLK_ENABLE();
-  __HAL_RCC_DMA2_CLK_ENABLE();
+//  __HAL_RCC_DMA2_CLK_ENABLE();
 
   /* DMA interrupt init */
   /* DMA1_Stream0_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA1_Stream0_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(DMA1_Stream0_IRQn);
-  /* DMA2_Stream0_IRQn interrupt configuration */
+//  /* DMA2_Stream0_IRQn interrupt configuration */
 //  HAL_NVIC_SetPriority(DMA2_Stream0_IRQn, 0, 0);
 //  HAL_NVIC_EnableIRQ(DMA2_Stream0_IRQn);
 
@@ -512,6 +513,7 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_Init(GPIOI, &GPIO_InitStruct);
   HAL_GPIO_WritePin(GPIOI, GPIO_PIN_12, GPIO_PIN_SET);
   HAL_GPIO_WritePin(GPIOI, GPIO_PIN_13, GPIO_PIN_SET);
+/* USER CODE END MX_GPIO_Init_2 */
 }
 
 /* USER CODE BEGIN 4 */
@@ -532,7 +534,7 @@ static void I2S1_ReInit(uint32_t Mode)
   hi2s1.Init.Standard = I2S_STANDARD_PHILIPS;
   hi2s1.Init.DataFormat = I2S_DATAFORMAT_16B_EXTENDED;
   hi2s1.Init.MCLKOutput = I2S_MCLKOUTPUT_DISABLE;
-  hi2s1.Init.AudioFreq = I2S_AUDIOFREQ_32K;
+  hi2s1.Init.AudioFreq = I2S_AUDIOFREQ_11K;
   hi2s1.Init.CPOL = I2S_CPOL_LOW;
   hi2s1.Init.FirstBit = I2S_FIRSTBIT_MSB;
   hi2s1.Init.WSInversion = I2S_WS_INVERSION_DISABLE;
@@ -560,8 +562,6 @@ void HAL_I2S_RxHalfCpltCallback(I2S_HandleTypeDef *hi2s)
 void HAL_I2S_TxCpltCallback(I2S_HandleTypeDef *hi2s)
 {
 	full_i2s_tx = 1;
-
-//	HAL_I2S_DMAStop(hi2s);
 }
 
 void HAL_I2S_TxHalfCpltCallback(I2S_HandleTypeDef *hi2s)

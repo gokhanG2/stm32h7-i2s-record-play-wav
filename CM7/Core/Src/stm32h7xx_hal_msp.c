@@ -97,7 +97,7 @@ void HAL_I2S_MspInit(I2S_HandleTypeDef* hi2s, uint32_t Mode)
   /** Initializes the peripherals clock
   */
     PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_SPI1;
-    PeriphClkInitStruct.Spi123ClockSelection = RCC_SPI123CLKSOURCE_PLL;
+    PeriphClkInitStruct.Spi123ClockSelection = RCC_SPI123CLKSOURCE_CLKP;
     if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct) != HAL_OK)
     {
       Error_Handler();
@@ -135,8 +135,6 @@ void HAL_I2S_MspInit(I2S_HandleTypeDef* hi2s, uint32_t Mode)
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
     GPIO_InitStruct.Alternate = GPIO_AF5_SPI1;
     HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
-    /* I2S1 DMA Init */
 
   /* USER CODE BEGIN SPI1_MspInit 1 */
     if(Mode == I2S_MODE_MASTER_TX){
