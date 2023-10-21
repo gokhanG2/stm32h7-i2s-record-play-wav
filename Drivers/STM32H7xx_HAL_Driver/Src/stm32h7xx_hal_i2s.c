@@ -264,7 +264,7 @@ static HAL_StatusTypeDef  I2S_WaitFlagStateUntilTimeout(I2S_HandleTypeDef *hi2s,
   *         the configuration information for I2S module
   * @retval HAL status
   */
-HAL_StatusTypeDef HAL_I2S_Init(I2S_HandleTypeDef *hi2s)
+HAL_StatusTypeDef HAL_I2S_Init(I2S_HandleTypeDef *hi2s, uint32_t Mode)
 {
   uint32_t i2sdiv;
   uint32_t i2sodd;
@@ -316,7 +316,7 @@ HAL_StatusTypeDef HAL_I2S_Init(I2S_HandleTypeDef *hi2s)
     hi2s->MspInitCallback(hi2s);
 #else
     /* Init the low level hardware : GPIO, CLOCK, CORTEX...etc */
-    HAL_I2S_MspInit(hi2s);
+    HAL_I2S_MspInit(hi2s, Mode);
 #endif /* USE_HAL_I2S_REGISTER_CALLBACKS */
   }
 
@@ -509,7 +509,7 @@ HAL_StatusTypeDef HAL_I2S_DeInit(I2S_HandleTypeDef *hi2s)
   *         the configuration information for I2S module
   * @retval None
   */
-__weak void HAL_I2S_MspInit(I2S_HandleTypeDef *hi2s)
+__weak void HAL_I2S_MspInit(I2S_HandleTypeDef *hi2s, uint32_t Mode)
 {
   /* Prevent unused argument(s) compilation warning */
   UNUSED(hi2s);
